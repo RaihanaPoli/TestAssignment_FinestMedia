@@ -1,0 +1,115 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>    
+    <script>
+        debugger
+        function enableElement(obj) {
+            obj.value = '';
+            obj.disabled = false;
+        }
+        function disableElement(obj) {
+            obj.value = '';
+            obj.disabled = true;
+        }
+        $(document).ready(function () {
+            $("#btnGetData").click(function () {
+                debugger
+                if (document.getElementById("rdMonthly").checked == true) {
+                    ///////Monthly///////////////
+                    debugger
+                    var month = $('#monthly').val();
+                    var mdt = month.split("-");
+                    var days = Math.round(((new Date(mdt[0], mdt[1])) - (new Date(mdt[0], mdt[1] - 1))) / 86400000);
+                    var sdt = ["01", mdt[1], mdt[0]].join("-");
+                    var edt = [days, mdt[1], mdt[0]].join("-");
+                    var startDate = [mdt[0], mdt[1], "01"].join("-");
+                    var EndDate = [mdt[0], mdt[1], days].join("-");
+                }
+                if (document.getElementById("rdWeekly").checked == true)  {
+                    /////////////Weekly///////////
+                    debugger
+                    var week = $('#weekly').val();
+                    var ydt = week.split("-");
+                    var wdt = week.split("W");
+                    var y = parseInt(ydt[0]);
+                    var w = parseInt(wdt[1]);
+
+                    var simple = new Date(y, 0, 1 + (w - 1) * 7);
+                    var to = simple.setTime(simple.getTime() - (simple.getDay() ? simple.getDay() : 7) * 24 * 60 * 60 * 1000);
+                    var from = simple.setTime(simple.getTime() - 6 * 24 * 60 * 60 * 1000);
+                    var startDate = new Date(to);
+                    var EndDate = new Date(from);
+                }
+                if (document.getElementById("rdDaily").checked == true)  {
+                    ///////////Date Wise/////////////
+                    debugger
+                    var startDate = $('#StartDate').val();
+                    var dt = startDate.split("-");
+                    var sdt = [dt[2], dt[1], dt[0]].join("-");
+
+                    var EndDate = $('#EndDate').val();
+                    var dt1 = EndDate.split("-");
+                    var edt = [dt1[2], dt1[1], dt1[0]].join("-");
+                }
+
+                var Price = $('#txtPrice').val();
+                //////////////Validation///////////////
+                var endtime = Math.abs(new Date(EndDate).getTime());
+                var starttime = Math.abs(new Date(startDate).getTime());
+
+                if (endtime < starttime) {
+                    alert("End date is less thn Start date");
+                }
+                else {
+                    var timeDiff = Math.abs(endtime - starttime);
+                    var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+                    if (diffDays > 730) {
+                        alert("Invalid Parameter");
+                    }
+                    else {
+                        $("#output").append("<tr><th>Consumption Date</th><th>Hour Consumption</th><th>Total Price</th></tr>");
+                        $.ajax({                            
+                            type: "GET",
+                            url: "/HourConsumption/XmlExample",
+                            data: { startDate: sdt, EndDate: edt },
+                            dataType: "xml",
+                            success: function (xml) {
+                                debugger
+                                $(xml).find("HourConsumption").each(function () {
+                                    $("#output").append("<tr><td>" + $(this).attr("ts") + "</td><td>" + $(this).html() + "</td><td>" + $(this).html() * Price + "</td></tr>");
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+    
+</head>
+<body>
+    <br />
+    <form>
+        <div>
+            <input type="radio" name="FinestMedia" value="Monthly" id="rdMonthly" onClick="enableElement(this.form.monthly);disableElement(this.form.weekly);disableElement(this.form.StartDate);disableElement(this.form.EndDate);"> Month Wise<br />
+            <input type="month" class="form-control" id="monthly" name="monthly" disabled="disabled"/>
+        </div><br />
+        <div>
+            <input type="radio" name="FinestMedia" value="Weekly" id="rdWeekly" onClick="enableElement(this.form.weekly);disableElement(this.form.monthly);disableElement(this.form.StartDate);disableElement(this.form.EndDate);"> Week Wise<br />
+            <input type="week" class="form-control" id="weekly" name="weekly" disabled="disabled"/>
+        </div><br />
+        <div>
+            <input type="radio" name="FinestMedia" value="Daily" id="rdDaily" onClick="enableElement(this.form.StartDate);enableElement(this.form.EndDate);disableElement(this.form.monthly);disableElement(this.form.weekly);"> Day Wise<br />
+            Start Date<input type="date" class="form-control" id="StartDate" name="StartDate" disabled="disabled" /><br />
+            End Date<input type="date" class="form-control" id="EndDate" name="EndDate" disabled="disabled" />
+        </div><br />
+        <div>Unit Price<input type="text" class="form-control" id="txtPrice" style="width:200px;" /></div><br />
+        <button class="btn-info" id="btnGetData" type="button">Get Data</button><br />
+        <br />
+        <table id="output" class="table table-bordered"></table>
+    </form>
+   
+</body>
+</html>
